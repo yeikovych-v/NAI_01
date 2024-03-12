@@ -14,6 +14,7 @@ import pl.edu.s28201.nai_01.service.IrisService;
 import java.io.BufferedReader;
 import java.io.File;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.*;
 
@@ -65,17 +66,17 @@ public class ProgramController {
     @SneakyThrows
     private int requestK() {
         System.out.print("Enter number K: ");
-        String numK = console.readLine().trim();
+        String strK = console.readLine().trim();
         System.out.println();
 
-        while (!calculationService.isInteger(numK)) {
-            System.out.println("K should be integer.");
+        while (!calculationService.isInteger(strK) || !calculationService.isValidK(Integer.parseInt(strK))) {
+            System.out.println("K should be integer and bigger than 0.");
             System.out.print("Enter number K: ");
-            numK = console.readLine().trim();
+            strK = console.readLine().trim();
             System.out.println();
         }
 
-        return Integer.parseInt(numK);
+        return Integer.parseInt(strK);
     }
 
     @SneakyThrows
@@ -105,7 +106,7 @@ public class ProgramController {
             case "help" -> executeHelp();
             case "testf" -> {
                 if (splitCommands.length != 2) yield false;
-                yield executeTestF(splitCommands[1]);
+                yield executeTestF(splitCommands[1].trim());
             }
             case "test" -> {
                 if (splitCommands.length != (irisService.getParamsNum() + 1)) yield false;
@@ -121,6 +122,10 @@ public class ProgramController {
 
     private boolean executeSetK(String strK) {
         if (!calculationService.isInteger(strK)) return false;
+        if (!calculationService.isValidK(Integer.parseInt(strK))) {
+            System.out.println("K value cannot be less than 1.");
+            return false;
+        }
         k = Integer.parseInt(strK);
         return true;
     }
@@ -139,26 +144,32 @@ public class ProgramController {
     }
 
     private boolean executeTestF(String testPath) {
-        File testFile = new File(testPath);
-        if (!testFile.exists()) {
+        try {
+            File testFile = new File(testPath);
+            if (!testFile.exists()) {
+                System.out.println("File with given path does not exist.");
+                return false;
+            }
+
+            List<IrisEntry> testIrises = irisService.parseToIrises(fileService.readTrainFile(testFile));
+            int matchingCount = 0;
+            for (IrisEntry iris : testIrises) {
+                Iris computedSet = findResultSet(iris, testIrises);
+                String preparedAttributes = calculationService.getAttributesStringFromAttributes(iris.getAttributes());
+                System.out.println("Iris with attributes: {" + preparedAttributes + "} computed to be {"
+                        + computedSet.toString() + "}, actually belongs to {" + iris.getFlowerType().toString() + "}");
+                if (iris.getFlowerType().equals(computedSet)) matchingCount++;
+            }
+
+            BigDecimal accuracy = BigDecimal.valueOf((double) matchingCount).divide(new BigDecimal(testIrises.size()), MathContext.DECIMAL128)
+                    .multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_UP);
+            System.out.println("Accuracy in given test(in percent): " + accuracy.doubleValue() + "%");
+
+            return true;
+        } catch (Exception e) {
             System.out.println("File with given path does not exist.");
             return false;
         }
-
-        List<IrisEntry> testIrises = irisService.parseToIrises(fileService.readTrainFile(testFile));
-        int matchingCount = 0;
-        for (IrisEntry iris : testIrises) {
-            Iris computedSet = findResultSet(iris, testIrises);
-            String preparedAttributes = calculationService.getAttributesStringFromAttributes(iris.getAttributes());
-            System.out.println("Iris with attributes: {" + preparedAttributes + "} computed to be {"
-                    + computedSet.toString() + "}, actually belongs to {" + iris.getFlowerType().toString() + "}");
-            if (iris.getFlowerType().equals(computedSet)) matchingCount++;
-        }
-
-        BigDecimal accuracy = new BigDecimal(matchingCount).divide(new BigDecimal(testIrises.size()), RoundingMode.HALF_UP).multiply(new BigDecimal(100));
-        System.out.println("Accuracy in given test(in percent): " + accuracy.doubleValue() + "%");
-
-        return true;
     }
 
     private boolean executeHelp() {

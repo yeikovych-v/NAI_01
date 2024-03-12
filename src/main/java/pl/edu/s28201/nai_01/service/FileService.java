@@ -10,8 +10,6 @@ import java.util.List;
 @Service
 public class FileService {
 
-    private BufferedWriter fileWrite;
-
     @SneakyThrows
     public List<String> readTrainFile(File trainFile) {
         List<String> irises = new ArrayList<>();

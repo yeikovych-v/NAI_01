@@ -16,16 +16,9 @@ public class CalculationService {
     public boolean isInteger(String string) {
         if (string == null) return false;
         try {
-            Integer i = Integer.parseInt(string);
+            Integer.parseInt(string);
         } catch (NumberFormatException e) {
             return false;
-        }
-        return true;
-    }
-
-    public boolean allInt(String... ints) {
-        for (String s : ints) {
-            if (!isInteger(s)) return false;
         }
         return true;
     }
@@ -33,7 +26,7 @@ public class CalculationService {
     public boolean isDecimal(String s) {
         if (s == null) return false;
         try {
-            BigDecimal d = new BigDecimal(s);
+            new BigDecimal(s);
         } catch (NumberFormatException e) {
             return false;
         }
@@ -49,7 +42,7 @@ public class CalculationService {
 
     @SneakyThrows
     public BigDecimal getMinFromSet(Set<BigDecimal> keys) {
-        if (keys.isEmpty()) throw new IllegalAccessException("No elements in keyset.");
+        if (keys.isEmpty()) throw new IllegalAccessException("No elements in key set.");
         return keys.stream().min(BigDecimal::compareTo).get();
 
     }
@@ -93,5 +86,9 @@ public class CalculationService {
         }
 
         return attrLine.substring(0, attrLine.length() - 1);
+    }
+
+    public boolean isValidK(int k) {
+        return k >= 1;
     }
 }

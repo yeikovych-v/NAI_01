@@ -1,7 +1,6 @@
 package pl.edu.s28201.nai_01.service;
 
 import lombok.Getter;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.stereotype.Service;
 import pl.edu.s28201.nai_01.exception.UnsupportedIrisException;
 import pl.edu.s28201.nai_01.model.Iris;
