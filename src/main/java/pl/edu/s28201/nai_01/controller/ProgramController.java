@@ -4,12 +4,12 @@ import com.google.common.collect.ArrayListMultimap;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import pl.edu.s28201.nai_01.model.Iris;
-import pl.edu.s28201.nai_01.model.IrisEntry;
-import pl.edu.s28201.nai_01.repository.IrisRepository;
+import pl.edu.s28201.nai_01.exception.UnsupportedEntryTypeException;
+import pl.edu.s28201.nai_01.model.Entry;
+import pl.edu.s28201.nai_01.repository.EntryRepository;
 import pl.edu.s28201.nai_01.service.CalculationService;
 import pl.edu.s28201.nai_01.service.FileService;
-import pl.edu.s28201.nai_01.service.IrisService;
+import pl.edu.s28201.nai_01.service.EntryService;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,25 +22,25 @@ import java.util.*;
 public class ProgramController {
 
     private final FileService fileService;
-    private final IrisRepository irisRepository;
+    private final EntryRepository entryRepository;
     private final CalculationService calculationService;
     private final BufferedReader console;
-    private final IrisService irisService;
+    private final EntryService entryService;
     private int k;
 
     @Autowired
-    public ProgramController(FileService fileService, IrisRepository irisRepository, CalculationService calculationService, BufferedReader console, IrisService irisService) {
+    public ProgramController(FileService fileService, EntryRepository entryRepository, CalculationService calculationService, BufferedReader console, EntryService entryService) {
         this.fileService = fileService;
-        this.irisRepository = irisRepository;
+        this.entryRepository = entryRepository;
         this.calculationService = calculationService;
         this.console = console;
-        this.irisService = irisService;
+        this.entryService = entryService;
     }
 
     public void startProgram() {
         File trainFile = requestTestFile();
 
-        irisRepository.addAll(irisService.parseToIrises(fileService.readTrainFile(trainFile)));
+        entryRepository.addAll(entryService.parseToEntries(fileService.readTrainFile(trainFile)));
 
         k = requestK();
 
@@ -109,7 +109,7 @@ public class ProgramController {
                 yield executeTestF(splitCommands[1].trim());
             }
             case "test" -> {
-                if (splitCommands.length != (irisService.getParamsNum() + 1)) yield false;
+                if (splitCommands.length != (entryService.getParamsNum() + 1)) yield false;
                 yield executeTest(splitCommands);
             }
             case "setk" -> {
@@ -137,9 +137,9 @@ public class ProgramController {
     }
 
     private boolean executeTest(List<BigDecimal> decimals) {
-        Iris computedSet = findResultSet(new IrisEntry(decimals), irisRepository.findAll());
+        String computedSet = findResultSet(new Entry(decimals), entryRepository.findAll());
         String preparedAttributes = calculationService.getAttributesStringFromAttributes(decimals);
-        System.out.println("Iris with attributes: {" + preparedAttributes + "} belongs to " + computedSet.toString());
+        System.out.println("Entry with attributes: {" + preparedAttributes + "} belongs to " + computedSet);
         return true;
     }
 
@@ -151,17 +151,17 @@ public class ProgramController {
                 return false;
             }
 
-            List<IrisEntry> testIrises = irisService.parseToIrises(fileService.readTrainFile(testFile));
+            List<Entry> testEntries = entryService.parseToEntries(fileService.readTrainFile(testFile));
             int matchingCount = 0;
-            for (IrisEntry iris : testIrises) {
-                Iris computedSet = findResultSet(iris, testIrises);
-                String preparedAttributes = calculationService.getAttributesStringFromAttributes(iris.getAttributes());
-                System.out.println("Iris with attributes: {" + preparedAttributes + "} computed to be {"
-                        + computedSet.toString() + "}, actually belongs to {" + iris.getFlowerType().toString() + "}");
-                if (iris.getFlowerType().equals(computedSet)) matchingCount++;
+            for (Entry Entry : testEntries) {
+                String computedSet = findResultSet(Entry, testEntries);
+                String preparedAttributes = calculationService.getAttributesStringFromAttributes(Entry.getAttributes());
+                System.out.println("Entry with attributes: {" + preparedAttributes + "} computed to be {"
+                        + computedSet + "}, actually belongs to {" + Entry.getEntryType() + "}");
+                if (Entry.getEntryType().equals(computedSet)) matchingCount++;
             }
 
-            BigDecimal accuracy = BigDecimal.valueOf((double) matchingCount).divide(new BigDecimal(testIrises.size()), MathContext.DECIMAL128)
+            BigDecimal accuracy = BigDecimal.valueOf((double) matchingCount).divide(new BigDecimal(testEntries.size()), MathContext.DECIMAL128)
                     .multiply(new BigDecimal(100)).setScale(2, RoundingMode.HALF_UP);
             System.out.println("Accuracy in given test(in percent): " + accuracy.doubleValue() + "%");
 
@@ -185,46 +185,56 @@ public class ProgramController {
 
     // ----------------- LOGIC -------------------
 
-    private Iris findResultSet(IrisEntry irisEntry, List<IrisEntry> trainData) {
-        List<IrisEntry> irises = new ArrayList<>(trainData);
+    private String findResultSet(Entry entry, List<Entry> trainData) {
+        List<Entry> entries = new ArrayList<>(trainData);
 
-        ArrayListMultimap<BigDecimal, IrisEntry> distanceMultimap = ArrayListMultimap.create();
+        ArrayListMultimap<BigDecimal, Entry> distanceMultimap = ArrayListMultimap.create();
 
-        irises.forEach(iris -> {
-            BigDecimal distance = calculationService.distanceOf(iris, irisEntry);
-            distanceMultimap.put(distance, iris);
+        entries.forEach(e -> {
+            BigDecimal distance = calculationService.distanceOf(e, entry);
+            distanceMultimap.put(distance, e);
         });
 
-        List<IrisEntry> finalSubset = getIrisSubset(distanceMultimap);
+        List<Entry> finalSubset = getEntrySubset(distanceMultimap);
 
-        return getMostCommonIrisFromSubset(finalSubset);
+        return getMostCommonEntryFromSubset(finalSubset);
     }
 
-    private Iris getMostCommonIrisFromSubset(List<IrisEntry> finalSubset) {
-        long setosaCount = finalSubset.stream().filter(iris -> iris.getFlowerType().equals(Iris.SETOSA)).count();
-        long virginicaCount = finalSubset.stream().filter(iris -> iris.getFlowerType().equals(Iris.VIRGINICA)).count();
-        long versicolorCount = finalSubset.stream().filter(iris -> iris.getFlowerType().equals(Iris.VERSICOLOR)).count();
+    private String getMostCommonEntryFromSubset(List<Entry> finalSubset) {
+        Map<String, Long> entryTypeMap = new HashMap<>();
 
-        if (virginicaCount == setosaCount && setosaCount == versicolorCount) return Iris.VERSICOLOR;
-        if (Math.max(virginicaCount, setosaCount) < versicolorCount) return Iris.VERSICOLOR;
-        if (Math.max(versicolorCount, virginicaCount) < setosaCount) return Iris.SETOSA;
-        if (Math.max(versicolorCount, setosaCount) < virginicaCount) return Iris.VIRGINICA;
+        for (String entryType : entryRepository.findAllEntryTypes()) {
+            entryTypeMap.put(entryType, finalSubset.stream().filter(e -> e.getEntryType().equals(entryType)).count());
+        }
 
-        return null;
+        String mostCommonEntryType = null;
+        long maxCount = 0;
+
+        for (String entryType : entryTypeMap.keySet()) {
+            long curVal = entryTypeMap.get(entryType);
+            if (maxCount < curVal) {
+                maxCount = curVal;
+                mostCommonEntryType = entryType;
+            }
+        }
+
+        if (mostCommonEntryType == null) throw new UnsupportedEntryTypeException("Unable to determine entry type.");
+
+        return mostCommonEntryType;
     }
 
-    private List<IrisEntry> getIrisSubset(ArrayListMultimap<BigDecimal, IrisEntry> distanceMultimap) {
+    private List<Entry> getEntrySubset(ArrayListMultimap<BigDecimal, Entry> distanceMultimap) {
         Set<BigDecimal> keys = distanceMultimap.keySet();
         int leftToFind = k;
 
-        List<IrisEntry> subset = new ArrayList<>();
+        List<Entry> subset = new ArrayList<>();
 
         while (leftToFind > 0) {
             BigDecimal biggest = calculationService.getMinFromSet(keys);
-            List<IrisEntry> irises = distanceMultimap.get(biggest);
-            for (IrisEntry iris : irises) {
+            List<Entry> entries = distanceMultimap.get(biggest);
+            for (Entry entry : entries) {
                 if (leftToFind == 0) break;
-                subset.add(iris);
+                subset.add(entry);
                 leftToFind--;
             }
             keys.remove(biggest);

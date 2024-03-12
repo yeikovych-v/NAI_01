@@ -8,12 +8,12 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class IrisEntry {
+public class Entry {
 
     private List<BigDecimal> attributes;
-    private Iris flowerType;
+    private String entryType;
 
-    public IrisEntry(List<BigDecimal> attributes) {
+    public Entry(List<BigDecimal> attributes) {
         this.attributes = attributes;
     }
 }

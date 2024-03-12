@@ -12,14 +12,14 @@ public class FileService {
 
     @SneakyThrows
     public List<String> readTrainFile(File trainFile) {
-        List<String> irises = new ArrayList<>();
+        List<String> entries = new ArrayList<>();
 
         BufferedReader fileRead = new BufferedReader(new FileReader(trainFile));
         String line;
         while ((line = fileRead.readLine()) != null) {
-            irises.add(line);
+            entries.add(line);
         }
 
-        return irises;
+        return entries;
     }
 }

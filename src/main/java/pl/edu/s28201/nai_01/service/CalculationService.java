@@ -2,7 +2,7 @@ package pl.edu.s28201.nai_01.service;
 
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
-import pl.edu.s28201.nai_01.model.IrisEntry;
+import pl.edu.s28201.nai_01.model.Entry;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -47,13 +47,13 @@ public class CalculationService {
 
     }
 
-    public BigDecimal distanceOf(IrisEntry iris, IrisEntry irisEntry) {
-        List<BigDecimal> entryAttributes = irisEntry.getAttributes();
-        List<BigDecimal> irisAttributes = iris.getAttributes();
+    public BigDecimal distanceOf(Entry storedEntry, Entry entry) {
+        List<BigDecimal> entryAttributes = entry.getAttributes();
+        List<BigDecimal> storedEntryAttributes = storedEntry.getAttributes();
         List<BigDecimal> distanceSquared = new ArrayList<>();
 
         for (int i = 0; i < entryAttributes.size(); i++) {
-            BigDecimal distance = entryAttributes.get(i).subtract(irisAttributes.get(i));
+            BigDecimal distance = entryAttributes.get(i).subtract(storedEntryAttributes.get(i));
             BigDecimal squared = distance.multiply(distance);
 
             distanceSquared.add(squared);
