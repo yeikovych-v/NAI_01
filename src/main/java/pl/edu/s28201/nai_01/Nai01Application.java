@@ -12,7 +12,6 @@ import pl.edu.s28201.nai_01.controller.ProgramController;
 public class Nai01Application {
 
 	private final ProgramController controller;
-
 	private final ApplicationContext context;
 
 	@Autowired
