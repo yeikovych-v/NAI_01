@@ -69,8 +69,8 @@ public class ProgramController {
         String strK = console.readLine().trim();
         System.out.println();
 
-        while (!calculationService.isInteger(strK) || !calculationService.isValidK(Integer.parseInt(strK))) {
-            System.out.println("K should be integer and bigger than 0.");
+        while (!calculationService.isInteger(strK) || !calculationService.isValidK(Integer.parseInt(strK), entryRepository.entryCount())) {
+            System.out.println("K value cannot be less than 1 or more than train size.");
             System.out.print("Enter number K: ");
             strK = console.readLine().trim();
             System.out.println();
@@ -122,8 +122,8 @@ public class ProgramController {
 
     private boolean executeSetK(String strK) {
         if (!calculationService.isInteger(strK)) return false;
-        if (!calculationService.isValidK(Integer.parseInt(strK))) {
-            System.out.println("K value cannot be less than 1.");
+        if (!calculationService.isValidK(Integer.parseInt(strK), entryRepository.entryCount())) {
+            System.out.println("K value cannot be less than 1 or more than train size.");
             return false;
         }
         k = Integer.parseInt(strK);
@@ -229,7 +229,7 @@ public class ProgramController {
 
         List<Entry> subset = new ArrayList<>();
 
-        while (leftToFind > 0) {
+        while (leftToFind > 0 && !keys.isEmpty()) {
             BigDecimal biggest = calculationService.getMinFromSet(keys);
             List<Entry> entries = distanceMultimap.get(biggest);
             for (Entry entry : entries) {
