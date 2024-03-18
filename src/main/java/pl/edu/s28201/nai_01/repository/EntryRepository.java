@@ -31,4 +31,8 @@ public class EntryRepository {
     public List<String> findAllEntryTypes() {
         return entryTypes;
     }
+
+    public int entryCount() {
+        return decisionMatrix.size();
+    }
 }
