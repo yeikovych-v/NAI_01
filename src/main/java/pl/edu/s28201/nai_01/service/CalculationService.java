@@ -88,7 +88,7 @@ public class CalculationService {
         return attrLine.substring(0, attrLine.length() - 1);
     }
 
-    public boolean isValidK(int k) {
-        return k >= 1;
+    public boolean isValidK(int k, int trainFileSize) {
+        return k >= 1 && k <= trainFileSize;
     }
 }
